@@ -169,7 +169,7 @@ window.$$$ = (function ()
 			var href = el.prop('href');
 			if (!_this.isBaseURL(href)) return true;
 
-			if (!el.hasClass('x13AjaxNav') && !el.parent().hasClass('x13AjaxNav')) return true;
+			if (!el.hasClass('ajaxNav') && !el.parent().hasClass('ajaxNav')) return true;
 
 			
 			if (_this.processInternalLink(href))
