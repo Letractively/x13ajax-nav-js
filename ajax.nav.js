@@ -7,6 +7,14 @@ window.$$$ = (function ()
 	* @license					GNU GPL 3: http://www.gnu.org/licenses/gpl.html
 	* @contacts					klyde13[]gmail.com
 	*
+	* {
+	* 	Требует чтобы ajax-ответ с сервера являлся JSON-объектом со следующими полями:
+	* 		~ controller 		- имя контроллера
+	* 		~ method 			- имя метода
+	* 		~ content 			- контент для страницы
+	* 		~ [title] 			- опциональное поле, title для страницы
+	* 		~ [destinationNode] - опциональное поле, определяющее целевой html-элемент
+	* }
 	*
 	* @param object	params -	объект для хранения служебной информации
 	* @param object jQuery -	объект jQuery
@@ -52,11 +60,11 @@ window.$$$ = (function ()
 				return _this.processInternalLink(d.redirect, true);				
 			}
 
-			if (typeof d.controller != 'undefined')
-				_this.params.controller = d.controller;
+			_this.params.controller = d.controller;
+			_this.params.method = d.method;
 
-			if (typeof d.method != 'undefined')
-				_this.params.method = d.method;
+			if (typeof d.title != 'undefined')
+				this.jQuery('title').html(d.title);
 
 			if (typeof d.content != 'undefined')
 			{
@@ -279,6 +287,11 @@ window.$$$ = (function ()
 	}
 })();
 
+/**
+* ####################################################################################################################
+* Примеры использования
+*
+*/
 $$$ = new $$$(window, $);
 
 $$$.$.processAjaxResponseInterlayer = function (d)
@@ -292,8 +305,6 @@ $$$.$.processAjaxResponseInterlayer = function (d)
 	if (typeof d.description != 'undefined')
 		this.jQuery('#description').attr('content', d.description);
 
-	if (typeof d.title != 'undefined')
-		this.jQuery('title').html(d.title);
 };
 
 $$$.$.navEffect = function ()
@@ -306,4 +317,30 @@ $$$.$.navDisEffect = function ()
 {
 	this.jQuery('a').css({'cursor': 'pointer'});
 	this.jQuery('html').css('box-shadow', '');
+}
+
+$$$('*', letsAjaxAllForms);
+$$$('/view', initLightBox);
+$$$('/edit', initValidation);
+
+$$$('profile/', initIM);
+
+function letsAjaxAllForms()
+{
+	//.....
+}
+
+function initLightBox()
+{
+	//.....
+}
+
+function initValidation()
+{
+	//.....
+}
+
+function initIM()
+{
+	//.....
 }
