@@ -17,6 +17,13 @@ window.$$$ = (function ()
 	* }
 	*
 	* @param object	params -	объект для хранения служебной информации
+	* {
+	*	должен содержать поля:
+	*		~ base_url		- корневой URL сайта, например "http://example.com/"
+	*		~ controller	- текущий открытый контроллер, например "profile"
+	*		~ method		- текущий открытый метод контроллера, например "view"
+	* }
+	*
 	* @param object jQuery -	объект jQuery
 	* @class x13AjaxNav
 	* @constructor
