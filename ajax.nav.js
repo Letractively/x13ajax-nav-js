@@ -272,19 +272,31 @@ window.$$$ = (function ()
 
 			return false;
 		};
-
+		
+		/**
+		* Метод, возвращающий текукищий unixtime
+		*
+		* @method now
+		* @return integer unixtime
+		*/
+		_t.now = function ()
+		{
+			return Math.round((new Date()).getTime() / 1000);
+		}
+		
 		//ссылка на экземпляр объекта
 		this.$.$ = this;
+		
 
 		_t.jQuery(document).ready(
 			function ()
 			{
-				_t.params.loadedTime = Math.round((new Date()).getTime() / 1000);
+				_t.params.loadedTime = _t.now();
 
 				_t.jQuery(_t.global).bind('popstate', 
 					function (e)
 					{
-						if ((now() - _t.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
+						if ((_t.now() - _t.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
 							_t.processInternalLink(_t.global.location);
 					}
 				);
