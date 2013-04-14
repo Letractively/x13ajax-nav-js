@@ -31,9 +31,11 @@ window.$$$ = (function ()
 	return function x13AjaxNav(params, jQuery)
 	{
 		//приватная ссылка для доступа к объекту внутри колбеков с измененным контекстом
-		var _this = this;
-		_this.params = params;
-		_this.jQuery = jQuery;
+		var _t = this;
+		_t.params = params;
+		_t.jQuery = jQuery;
+
+		_t.global = (function () {return this;})(); //window
 
 		/**
 		* Callback для визуализации загрузки страницы, будет вызываться перед отправкой ajax-запроса
@@ -64,14 +66,14 @@ window.$$$ = (function ()
 			if (typeof d.redirect != 'undefined')
 			{
 				history.replaceState(null, null, link);
-				return _this.processInternalLink(d.redirect, true);				
+				return _t.processInternalLink(d.redirect, true);				
 			}
 
-			_this.params.controller = d.controller;
-			_this.params.method = d.method;
+			_t.params.controller = d.controller;
+			_t.params.method = d.method;
 
 			if (typeof d.title != 'undefined')
-				this.jQuery('title').html(d.title);
+				_t.jQuery('title').html(d.title);
 
 			if (typeof d.content != 'undefined')
 			{
@@ -79,17 +81,17 @@ window.$$$ = (function ()
 
 				if (typeof d.destinationNode != 'undefined')
 					destinationNode = d.destinationNode;
-						else destinationNode = _this.jQuery('#showContentSpan') ? '#showContentSpan' : 'body';
+						else destinationNode = _t.jQuery('#showContentSpan') ? '#showContentSpan' : 'body';
 
-				_this.jQuery(destinationNode).html(d.content);
+				_t.jQuery(destinationNode).html(d.content);
 			}
 
-			if (typeof _this.processAjaxResponseInterlayer == 'function')
-				_this.processAjaxResponseInterlayer(d);
+			if (typeof _t.processAjaxResponseInterlayer == 'function')
+				_t.processAjaxResponseInterlayer(d);
 
-			_this.reloaded();
+			_t.reloaded();
 
-			_this.lastOk = true;
+			_t.lastOk = true;
 		};
 
 		/**
@@ -120,7 +122,7 @@ window.$$$ = (function ()
 		*/
 		this.isBaseURL = function (url)
 		{
-			return (url + "").toLowerCase().indexOf(_this.params.base_url.toLowerCase()) === 0;
+			return (url + "").toLowerCase().indexOf(_t.params.base_url.toLowerCase()) === 0;
 		};
 
 		/**
@@ -132,12 +134,12 @@ window.$$$ = (function ()
 		*/
 		this.processInternalLink = function (link)
 		{
-			if (!_this.isBaseURL(link)) return false;
+			if (!_t.isBaseURL(link)) return false;
 
-			_this.lastOk = false;
+			_t.lastOk = false;
 
-			if (typeof _this.navEffect == 'function')
-				_this.navEffect();
+			if (typeof _t.navEffect == 'function')
+				_t.navEffect();
 
 			$.ajax(
 				{
@@ -145,15 +147,15 @@ window.$$$ = (function ()
 					dataType: "JSON",
 					url: link,
 					async: false,
-					success: _this.processAjaxResponse,
-					error: _this.processError
+					success: _t.processAjaxResponse,
+					error: _t.processError
 				}
 			);
 
-			if (typeof _this.navEffect == 'function')
-				_this.navDisEffect();
+			if (typeof _t.navEffect == 'function')
+				_t.navDisEffect();
 			
-			return _this.lastOk;
+			return _t.lastOk;
 		};
 
 		/**
@@ -166,20 +168,20 @@ window.$$$ = (function ()
 		*/
 		this.linkClick = function (e)
 		{
-			var el = _this.jQuery(e.target);
+			var el = _t.jQuery(e.target);
 
 			if (el.prop('tagName') === 'IMG'
-				&& el.parent().prop('tagName') === 'A') el = _this.jQuery(el.parent());
+				&& el.parent().prop('tagName') === 'A') el = _t.jQuery(el.parent());
 
 			if (el.prop('tagName') !== "A") return true;
 			
 			var href = el.prop('href');
-			if (!_this.isBaseURL(href)) return true;
+			if (!_t.isBaseURL(href)) return true;
 
 			if (!el.hasClass('ajaxNav') && !el.parent().hasClass('ajaxNav')) return true;
 
 			
-			if (_this.processInternalLink(href))
+			if (_t.processInternalLink(href))
 				history.pushState(null, null, href);
 
 			e.stopPropagation();
@@ -196,20 +198,21 @@ window.$$$ = (function ()
 		this.reloaded = function ()
 		{
 			var k;
-			for (var k in _this.rebinds['*'])
-				_this.rebinds['*'][k]();
+			for (var k in _t.rebinds['*'])
+				_t.rebinds['*'][k]();
 
-			indBind = _this.params.controller.toLowerCase();
-			for (k in _this.rebinds['ccontroller'][indBind])
-				_this.rebinds['ccontroller'][indBind][k]();
+			indBind = _t.params.controller.toLowerCase();
+			for (k in _t.rebinds['c'][indBind])
+				if (typeof _t.rebinds['c'][indBind][k] == 'function')
+					_t.rebinds['c'][indBind][k].apply(_t.global, []);
 
-			var indBind = (_this.params.controller + '/' + _this.params.method).toLowerCase();
-			for (k in _this.rebinds['controller_and_method'][indBind])
-				_this.rebinds['controller_and_method'][indBind][k]();
+			var indBind = (_t.params.controller + '/' + _t.params.method).toLowerCase();
+			for (k in _t.rebinds['cm'][indBind])
+				_t.rebinds['cm'][indBind][k].apply(_t.global, []);
 
-			var indBind = _this.params.method.toLowerCase();
-			for (k in _this.rebinds['method'][indBind])
-				_this.rebinds['method'][indBind][k]();
+			var indBind = _t.params.method.toLowerCase();
+			for (k in _t.rebinds['m'][indBind])
+				_t.rebinds['m'][indBind][k].apply(_t.global, []);
 		};
 
 		/**
@@ -228,40 +231,42 @@ window.$$$ = (function ()
 		*/
 		this.$ = function (dest, callBack)
 		{
-			if (_this.rebinds == undefined) 							_this.rebinds = {};
-			if (_this.rebinds['*'] == undefined) 						_this.rebinds['*'] = [];
-			if (_this.rebinds['method'] == undefined) 					_this.rebinds['method'] = {};
-			if (_this.rebinds['ccontroller'] == undefined) 				_this.rebinds['ccontroller'] = {};
-			if (_this.rebinds['controller_and_method'] == undefined)	_this.rebinds['controller_and_method'] = {};
+			if (typeof callBack !== 'function') return false;
+			
+			if (_t.rebinds == undefined) 		_t.rebinds = {};
+			if (_t.rebinds['*'] == undefined) 	_t.rebinds['*'] = [];
+			if (_t.rebinds['m'] == undefined) 	_t.rebinds['m'] = {};
+			if (_t.rebinds['c'] == undefined) 	_t.rebinds['c'] = {};
+			if (_t.rebinds['cm'] == undefined)	_t.rebinds['cm'] = {};
 
 			if (dest == '*')
 			{
-				_this.rebinds['*'].push(callBack);
+				_t.rebinds['*'].push(callBack);
 				return true;
 			}
 
 			dest = dest.split('/');
 
-			if ((dest[0] == '*' || dest[0] == '' || dest[0] == undefined) && (dest[1] != '' || dest[1] != undefined))
+			if ((!dest[0] || dest[0] == '*') && !dest[1])
 			{
-				if (_this.rebinds['method'][dest[1]] == undefined) _this.rebinds['method'][dest[1]] = [];
-				_this.rebinds['method'][dest[1]].push(callBack);
+				if (_t.rebinds['m'][dest[1]] == undefined) _t.rebinds['m'][dest[1]] = [];
+				_t.rebinds['m'][dest[1]].push(callBack);
 				return true;
 			}
 
-			if ((dest[0] != '' || dest[0] != undefined) && (dest[1] == '*' ||dest[1] == '' || dest[1] == undefined))
+			if (dest[0] && (!dest[1] || dest[1] == '*'))
 			{
-				if (_this.rebinds['ccontroller'][dest[0]] == undefined) _this.rebinds['ccontroller'][dest[0]] = [];
-				_this.rebinds['ccontroller'][dest[1]].push(callBack);
-				_this.rebinds['ccontroller'].push(callBack);
+				if (_t.rebinds['c'][dest[0]] == undefined) _t.rebinds['c'][dest[0]] = [];
+				_t.rebinds['c'][dest[1]].push(callBack);
+				_t.rebinds['c'].push(callBack);
 				return true;
 			}
 
-			if ((dest[0] != '' || dest[0] != undefined) && (dest[1] != '' || dest[1] != undefined))
+			if (dest[0] && dest[1])
 			{
 				var ind = dest[0] + '/' + dest[1];
-				if (_this.rebinds['controller_and_method'][ind] == undefined) _this.rebinds['controller_and_method'][ind] = [];
-				_this.rebinds['controller_and_method'][ind].push(callBack);
+				if (_t.rebinds['cm'][ind] == undefined) _t.rebinds['cm'][ind] = [];
+				_t.rebinds['cm'][ind].push(callBack);
 				return true;
 			}
 
@@ -271,22 +276,22 @@ window.$$$ = (function ()
 		//ссылка на экземпляр объекта
 		this.$.$ = this;
 
-		_this.jQuery(document).ready(
+		_t.jQuery(document).ready(
 			function ()
 			{
-				_this.params.loadedTime = Math.round((new Date()).getTime() / 1000);
+				_t.params.loadedTime = Math.round((new Date()).getTime() / 1000);
 
-				_this.jQuery(window).bind('popstate', 
+				_t.jQuery(_t.global).bind('popstate', 
 					function (e)
 					{
-						if ((now() - _this.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
-							_this.processInternalLink(window.location);
+						if ((now() - _t.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
+							_t.processInternalLink(_t.global.location);
 					}
 				);
 
-				_this.jQuery('html').click(_this.linkClick);
+				_t.jQuery('html').click(_t.linkClick);
 
-				_this.reloaded();
+				_t.reloaded();
 			}
 		);
 
