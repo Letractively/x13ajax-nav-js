@@ -1,4 +1,4 @@
-window.$$$ = (function ()
+(function (jQuery)
 {
 	/**
 	* x13AjaxNav.js - Класс аякс-навигации по сайту и автоматического биндинга событий
@@ -16,24 +16,39 @@ window.$$$ = (function ()
 	* 		~ [destinationNode] - опциональное поле, определяющее целевой html-элемент
 	* }
 	*
-	* @param object	params -	объект для хранения служебной информации
-	* {
-	*	должен содержать поля:
-	*		~ base_url		- корневой URL сайта, например "http://example.com/"
-	*		~ controller	- текущий открытый контроллер, например "profile"
-	*		~ method		- текущий открытый метод контроллера, например "view"
-	* }
+	* При первой загрузки страницы необходимо указать параметры URI, вызывав следующий метод 
+	* init(base_url, controller, method)
+	* @param string base_url	- корневой URL сайта, например "http://example.com/"
+	* @param string controller	- текущий открытый контроллер, например "profile"
+	* @param string method		- текущий открытый метод контроллера, например "view"
 	*
 	* @param object jQuery -	объект jQuery
 	* @class x13AjaxNav
 	* @constructor
 	*/
-	return function x13AjaxNav(params, jQuery)
+
+	function x13AjaxNav(jq)
 	{
 		//приватная ссылка для доступа к объекту внутри колбеков с измененным контекстом
 		var _t = this;
-		_t.params = params;
-		_t.jQuery = jQuery;
+		_t.params = {};
+		_t.jq = jq;
+
+		/**
+		* Установка параметров. Этот метод необходимо вызвать при первой загрузки страницы
+		*
+		* @param string base_url	- корневой URL сайта, например "http://example.com/"
+		* @param string controller	- текущий открытый контроллер, например "profile"
+		* @param string method		- текущий открытый метод контроллера, например "view"
+		*
+		* @method init
+		* @return null
+		*/
+		_t.init = function (base_url, controller, method)
+		{
+			_t.params.controller = controller;
+			_t.params.method = method;
+		}
 
 		_t.global = (function () {return this;})(); //window
 
@@ -43,7 +58,7 @@ window.$$$ = (function ()
 		* @method navEffect
 		* @return null
 		*/
-		this.navEffect = function () {};
+		_t.navEffect = function () {};
 
 		/**
 		* Callback для скрытия эффекта визуализации загрузки страницы, будет вызывать после отправки ajax-запроса
@@ -51,7 +66,7 @@ window.$$$ = (function ()
 		* @method navDisEffect
 		* @return null
 		*/
-		this.navDisEffect = function () {};
+		_t.navDisEffect = function () {};
 
 		/**
 		* Обработка пришедших ajax-данных
@@ -61,9 +76,9 @@ window.$$$ = (function ()
 		* @method processAjaxResponse
 		* @return null
 		*/
-		this.processAjaxResponse = function (d)
+		_t.processAjaxResponse = function (d)
 		{
-			if (typeof d.redirect != 'undefined')
+			if (d.redirect)
 			{
 				history.replaceState(null, null, link);
 				return _t.processInternalLink(d.redirect, true);				
@@ -72,18 +87,18 @@ window.$$$ = (function ()
 			_t.params.controller = d.controller;
 			_t.params.method = d.method;
 
-			if (typeof d.title != 'undefined')
-				_t.jQuery('title').html(d.title);
+			if (d.title)
+				_t.jq('title').html(d.title);
 
-			if (typeof d.content != 'undefined')
+			if (d.content)
 			{
 				var destinationNode;
 
-				if (typeof d.destinationNode != 'undefined')
+				if (d.destinationNode)
 					destinationNode = d.destinationNode;
-						else destinationNode = _t.jQuery('#showContentSpan') ? '#showContentSpan' : 'body';
+						else destinationNode = _t.jq('#showContentSpan') ? '#showContentSpan' : 'body';
 
-				_t.jQuery(destinationNode).html(d.content);
+				_t.jq(destinationNode).html(d.content);
 			}
 
 			if (typeof _t.processAjaxResponseInterlayer == 'function')
@@ -100,7 +115,7 @@ window.$$$ = (function ()
 		* @method processAjaxResponseInterlayer
 		* @return null
 		*/
-		this.processAjaxResponseInterlayer = function (d) {};
+		_t.processAjaxResponseInterlayer = function (d) {};
 
 		/**
 		* Метод обработки ошибки ajax-запроса
@@ -108,7 +123,7 @@ window.$$$ = (function ()
 		* @method isBaseURL
 		* @return boolean результат проверки
 		*/
-		this.processError = function (e)
+		_t.processError = function (e)
 		{
 			alert('ошибка выполнения запроса');
 		};
@@ -120,7 +135,7 @@ window.$$$ = (function ()
 		* @param string url - url для проверки
 		* @return boolean результат проверки
 		*/
-		this.isBaseURL = function (url)
+		_t.isBaseURL = function (url)
 		{
 			return (url + "").toLowerCase().indexOf(_t.params.base_url.toLowerCase()) === 0;
 		};
@@ -132,7 +147,7 @@ window.$$$ = (function ()
 		* @param string link - url для обработки
 		* @return boolean успешность обработки URL
 		*/
-		this.processInternalLink = function (link)
+		_t.processInternalLink = function (link)
 		{
 			if (!_t.isBaseURL(link)) return false;
 
@@ -152,7 +167,7 @@ window.$$$ = (function ()
 				}
 			);
 
-			if (typeof _t.navEffect == 'function')
+			if (typeof _t.navDisEffect == 'function')
 				_t.navDisEffect();
 			
 			return _t.lastOk;
@@ -166,12 +181,12 @@ window.$$$ = (function ()
 		* @param object e - объект события клика
 		* @return boolean взвращает true, если сыылка не должна обрабатываться, fasle - если ссылка прошла обработку
 		*/
-		this.linkClick = function (e)
+		_t.linkClick = function (e)
 		{
-			var el = _t.jQuery(e.target);
+			var el = _t.jq(e.target);
 
 			if (el.prop('tagName') === 'IMG'
-				&& el.parent().prop('tagName') === 'A') el = _t.jQuery(el.parent());
+				&& el.parent().prop('tagName') === 'A') el = _t.jq(el.parent());
 
 			if (el.prop('tagName') !== "A") return true;
 			
@@ -195,7 +210,7 @@ window.$$$ = (function ()
 		* @method reloaded
 		* @return null
 		*/
-		this.reloaded = function ()
+		_t.reloaded = function ()
 		{
 			var k;
 			for (var k in _t.rebinds['*'])
@@ -229,7 +244,7 @@ window.$$$ = (function ()
 		* @method $
 		* @return booelan взвращает успешность усановки коллбека
 		*/
-		this.$ = function (dest, callBack)
+		_t.addRoute = function (dest, callBack)
 		{
 			if (typeof callBack !== 'function') return false;
 			
@@ -239,7 +254,7 @@ window.$$$ = (function ()
 			if (_t.rebinds['c'] == undefined) 	_t.rebinds['c'] = {};
 			if (_t.rebinds['cm'] == undefined)	_t.rebinds['cm'] = {};
 
-			if (dest == '*')
+			if (!dest || dest == '*')
 			{
 				_t.rebinds['*'].push(callBack);
 				return true;
@@ -274,7 +289,7 @@ window.$$$ = (function ()
 		};
 		
 		/**
-		* Метод, возвращающий текукищий unixtime
+		* Метод возвращающий текукищий unixtime
 		*
 		* @method now
 		* @return integer unixtime
@@ -282,18 +297,14 @@ window.$$$ = (function ()
 		_t.now = function ()
 		{
 			return Math.round((new Date()).getTime() / 1000);
-		}
+		};
 		
-		//ссылка на экземпляр объекта
-		this.$.$ = this;
-		
-
-		_t.jQuery(document).ready(
+		_t.jq(document).ready(
 			function ()
 			{
 				_t.params.loadedTime = _t.now();
 
-				_t.jQuery(_t.global).bind('popstate', 
+				_t.jq(_t.global).bind('popstate', 
 					function (e)
 					{
 						if ((_t.now() - _t.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
@@ -301,53 +312,51 @@ window.$$$ = (function ()
 					}
 				);
 
-				_t.jQuery('html').click(_t.linkClick);
+				_t.jq('html').click(_t.linkClick);
 
 				_t.reloaded();
 			}
 		);
-
-		return this.$;
 	}
-})();
+
+	jQuery.x13 = new x13AjaxNav(jQuery);
+})(jQuery);
 
 /**
 * ####################################################################################################################
 * Примеры использования
 *
 */
-$$$ = new $$$(window, $);
-
-$$$.$.processAjaxResponseInterlayer = function (d)
+$.x13.params = window;
+$.x13.processAjaxResponseInterlayer = function (d)
 {
-	if (typeof d.hashId != 'undefined')
+	if (d.hashId)
 		this.params.hashId = d.hashId;
 
-	if (typeof d.userId != 'undefined')
+	if (d.userId)
 		this.params.userId = d.userId;
 
-	if (typeof d.description != 'undefined')
-		this.jQuery('#description').attr('content', d.description);
+	if (d.description)
+		this.jq('#description').attr('content', d.description);
 
 };
 
-$$$.$.navEffect = function ()
+$.x13.navEffect = function ()
 {
-	this.jQuery('html').css('box-shadow', 'inset 0px 0px 10px 10px rgba(0, 0, 150, 0.2)');
-	this.jQuery('a').css({'cursor': 'wait'});
+	this.jq('html').css('box-shadow', 'inset 0px 0px 10px 10px rgba(0, 0, 150, 0.2)');
+	this.jq('a').css({'cursor': 'wait'});
 };
 
-$$$.$.navDisEffect = function ()
+$.x13.navDisEffect = function ()
 {
-	this.jQuery('a').css({'cursor': 'pointer'});
-	this.jQuery('html').css('box-shadow', '');
+	this.jq('a').css({'cursor': 'pointer'});
+	this.jq('html').css('box-shadow', '');
 }
 
-$$$('*', letsAjaxAllForms);
-$$$('/view', initLightBox);
-$$$('/edit', initValidation);
-
-$$$('profile/', initIM);
+$.x13.addRoute('*', letsAjaxAllForms);
+$.x13.addRoute('/view', initLightBox);
+$.x13.addRoute('/edit', initValidation);
+$.x13.addRoute('profile/', initIM);
 
 function letsAjaxAllForms()
 {
