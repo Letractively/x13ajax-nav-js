@@ -46,6 +46,7 @@
 		*/
 		_t.init = function (base_url, controller, method)
 		{
+			_t.params.base_url = base_url;
 			_t.params.controller = controller;
 			_t.params.method = method;
 		}
@@ -327,7 +328,8 @@
 * Примеры использования
 *
 */
-$.x13.params = window;
+$.x13.init('<?=base_url()?>', '<?=$this->router->controller?>', '<?=$this->router->method?>');
+
 $.x13.processAjaxResponseInterlayer = function (d)
 {
 	if (d.hashId)
