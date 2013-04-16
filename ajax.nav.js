@@ -78,7 +78,7 @@ function ($, fieldName)
 	x13AjaxNav.prototype.navEffect = function () {};
 
 	/**
-	* Callback для скрытия эффекта визуализации загрузки страницы, будет вызывать после отправки ajax-запроса
+	* Callback для скрытия эффекта визуализации загрузки страницы, будет вызываться после отправки ajax-запроса
 	*
 	* @method navDisEffect
 	* @return null
@@ -121,7 +121,7 @@ function ($, fieldName)
 		if (typeof this.processAjaxResponseInterlayer == 'function')
 			this.processAjaxResponseInterlayer(d);
 
-		this.reloaded(999);
+		this.reloaded();
 
 		this.lastOk = true;
 	};
