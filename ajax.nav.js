@@ -57,16 +57,16 @@ function ($, fieldName)
 		this.params.loadedTime = this.now();
 
 		$(this.global).bind('popstate', 
-			function (e)
-			{
-				if (($[fieldName].now() - $[fieldName].params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
-					$[fieldName].processInternalLink($[fieldName].global.location);
-			}
+			$.proxy(
+				function (e)
+				{
+					if ((this.now() - this.params.loadedTime) > 1) //if - костыль для [sctricted]контуженного[/sctricted] хрома
+						this.processInternalLink(this.global.location);
+				}, this)
 		);
 
-		$('html').on('click', this.linkClick);
-
-		this.reloaded();
+		$('html').on('click', $.proxy(this.linkClick, this));
+		$(document).ready($.proxy(this.reloaded, this));
 	}
 
 	/**
@@ -98,11 +98,11 @@ function ($, fieldName)
 		if (d.redirect)
 		{
 			history.replaceState(null, null, link);
-			return $[fieldName].processInternalLink(d.redirect, true);				
+			return this.processInternalLink(d.redirect, true);				
 		}
 
-		$[fieldName].params.controller = d.controller;
-		$[fieldName].params.method = d.method;
+		this.params.controller = d.controller;
+		this.params.method = d.method;
 
 		if (d.title)
 			$('title').html(d.title);
@@ -118,12 +118,12 @@ function ($, fieldName)
 			$(destinationNode).html(d.content);
 		}
 
-		if (typeof $[fieldName].processAjaxResponseInterlayer == 'function')
-			$[fieldName].processAjaxResponseInterlayer(d);
+		if (typeof this.processAjaxResponseInterlayer == 'function')
+			this.processAjaxResponseInterlayer(d);
 
-		$[fieldName].reloaded();
+		this.reloaded(999);
 
-		$[fieldName].lastOk = true;
+		this.lastOk = true;
 	};
 
 	/**
@@ -179,8 +179,8 @@ function ($, fieldName)
 				dataType: "JSON",
 				url: link,
 				async: false,
-				success: $[fieldName].processAjaxResponse,
-				error: $[fieldName].processError
+				success: $.proxy(this.processAjaxResponse, this),
+				error: $.proxy(this.processError, this)
 			}
 		);
 
@@ -208,11 +208,11 @@ function ($, fieldName)
 		if (el.prop('tagName') !== "A") return true;
 		
 		var href = el.prop('href');
-		if (!$[fieldName].isBaseURL(href)) return true;
+		if (!this.isBaseURL(href)) return true;
 
 		if (!el.hasClass('ajaxNav') && !el.parent().hasClass('ajaxNav')) return true;
 		
-		if ($[fieldName].processInternalLink(href))
+		if (this.processInternalLink(href))
 			history.pushState(null, null, href);
 
 		e.stopPropagation();
@@ -229,28 +229,37 @@ function ($, fieldName)
 	x13AjaxNav.prototype.reloaded = function ()
 	{
 		var k, indBind;
+
 		if (!this.rebinds) return true;
 
-		if (this.isArray(this.rebinds['*']))
+		var controller = $.trim(this.params.controller.toLowerCase());
+		var method = $.trim(this.params.method.toLowerCase());
+
+		if (this.rebinds['*'])
 			for (k in this.rebinds['*'])
-				this.rebinds['*'][k]();
+				if (typeof this.rebinds['*'][k] == 'function')
+					this.rebinds['*'][k].apply(this.global, []);
 
-		indBind = this.params.method.toLowerCase();
-		if (this.isArray(this.rebinds['m'][indBind]))
-			for (k in this.rebinds['m'][indBind])
-				this.rebinds['m'][indBind][k].apply(this.global, []);
-			
-		indBind = this.params.controller.toLowerCase();
-		if (this.isArray(this.rebinds['c'][indBind]))
-			for (k in this.rebinds['c'][indBind])
-				if (typeof this.rebinds['c'][indBind][k] == 'function')
-					this.rebinds['c'][indBind][k].apply(this.global, []);
+		var routes = 
+			{
+				c:	controller, 
+				m:	method,
+				cm:	controller + '/' + method
+			};
 
-		indBind = (this.params.controller + '/' + this.params.method).toLowerCase();
-		if (this.isArray(this.rebinds['cm'][indBind]))
-			for (k in this.rebinds['cm'][indBind])
-				this.rebinds['cm'][indBind][k].apply(this.global, []);
+		for (var type in routes)
+		{
+			var route = routes[type];
+			var destArray = this.rebinds[type][route];
 
+			if (!destArray) continue;
+
+			for (k in destArray) 
+			{
+				if (typeof destArray[k] == 'function')
+					destArray[k].apply(this.global, []);
+			}
+		}
 	};
 
 	/**
@@ -271,10 +280,10 @@ function ($, fieldName)
 	{
 		if (typeof callBack !== 'function') return false;
 		
-		if (!this.rebinds)			this.rebinds = {};
-		if (!this.rebinds['*'])		this.rebinds['*'] = [];
-		if (!this.rebinds['m'])		this.rebinds['m'] = {};
-		if (!this.rebinds['c'])		this.rebinds['c'] = {};
+		if (!this.rebinds)		this.rebinds = {};
+		if (!this.rebinds['*'])	this.rebinds['*'] = [];
+		if (!this.rebinds['m'])	this.rebinds['m'] = {};
+		if (!this.rebinds['c'])	this.rebinds['c'] = {};
 		if (!this.rebinds['cm'])	this.rebinds['cm'] = {};
 
 		if (!dest || dest == '*')
@@ -284,21 +293,29 @@ function ($, fieldName)
 		}
 
 		dest = dest.split('/');
+		var ind = false, destArray = false;
 
-		var ind = false;
-		var destArray = false;
 
-		if ((ind = dest[1]) && (!dest[0] || dest[0] == '*'))
+		if (dest[1] && (!dest[0] || dest[0] == '*'))
+		{
 			destArray = 'm';
+			ind = dest[1];
+		}
 
-		if ((ind = dest[0]) && (!dest[1] || dest[1] == '*'))
+		if (dest[0] && (!dest[1] || dest[1] == '*'))
+		{
 			destArray = 'c';
+			ind = dest[0];
+		}
 
-		if (dest[0] && dest[1] && (ind = dest[0] + '/' + dest[1]))
+		if (dest[0] && dest[1] && (dest[0] != '*') && (dest[1] != '*'))
+		{
 			destArray = 'cm';
+			ind = dest[0] + '/' + dest[1];
+		}
 
 		if (ind && destArray)
-		{			
+		{
 			if (!this.rebinds[destArray][ind])
 				this.rebinds[destArray][ind] = [];
 
@@ -321,9 +338,10 @@ function ($, fieldName)
 		return Math.round((new Date()).getTime() / 1000);
 	};
 
-	$[fieldName] = new x13AjaxNav(jQuery);
+	$[fieldName] = new x13AjaxNav();
 
 })(jQuery, 'x13');
+
 
 /**
 * Примеры использования
